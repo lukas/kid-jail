@@ -34,8 +34,8 @@ class MatildaEscapeGame {
     }
 
     initSounds() {
-        // Create Web Audio API context for sound effects
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Initialize audio context only when needed (after user interaction)
+        this.audioContext = null;
         
         // Sound effect functions using Web Audio API
         this.sounds = {
@@ -56,7 +56,14 @@ class MatildaEscapeGame {
         };
     }
 
+    initAudioContext() {
+        // Skip audio context creation for now to avoid browser warnings
+        // This can be re-enabled when user interaction is properly detected
+        this.audioContext = null;
+    }
+
     playTone(frequency, duration, volume = 0.1) {
+        this.initAudioContext();
         if (!this.audioContext) return;
         
         const oscillator = this.audioContext.createOscillator();
@@ -1442,6 +1449,9 @@ class MatildaEscapeGame {
         this.sounds.switch();
         const newCharacter = this.activeCharacter === 'matilda' ? 'Matilda' : 'George';
         this.showMessage(`Switched to ${newCharacter}! 🔄`, 1000);
+        
+        // Update the display to reflect the character change
+        this.renderMaze();
     }
 
     collectPowerUp(powerUp) {
@@ -1710,6 +1720,9 @@ class MatildaEscapeGame {
 // Initialize game when page loads
 document.addEventListener('DOMContentLoaded', () => {
     const game = new MatildaEscapeGame();
+    
+    // Expose game to global scope for debugging
+    window.debugGame = game;
     
     // Optional: Start dad patrol for extra challenge
     // game.startDadPatrol();

@@ -1,0 +1,226 @@
+# George and Matilda Escape from Kid Jail - Technical Documentation
+
+## Overview
+Interactive browser-based escape game built with vanilla JavaScript, featuring dual character control, procedural maze generation, and comprehensive test coverage using Playwright.
+
+## Architecture
+
+### Core Game Class: MatildaEscapeGame
+- **File**: `game.js`
+- **Pattern**: Single class handling all game logic
+- **Initialization**: Creates game instance on DOMContentLoaded
+- **Global Reference**: `window.debugGame` for debugging
+
+### Key Methods & Properties
+
+#### Game State
+```javascript
+// Character positions and active character
+this.matildaPos = { x: 1, y: 1 }
+this.georgePos = { x: 2, y: 1 }
+this.activeCharacter = 'matilda' // or 'george'
+
+// Game status
+this.moves = 0
+this.score = 0
+this.gameWon = false
+this.mazeSize = 15
+```
+
+#### Critical Methods
+- `init()` - Initializes game, generates maze, attaches events
+- `generateMaze()` - Recursive backtracking maze generation
+- `renderMaze()` - Updates DOM with current game state
+- `moveCharacter(direction)` - Handles character movement with validation
+- `switchCharacter()` - Toggles active character and updates display
+- `attachEventListeners()` - Sets up keyboard and button controls
+
+## Technical Implementation Details
+
+### Maze Generation Algorithm
+- **Type**: Recursive backtracking
+- **Size**: 15x15 grid
+- **Cell Types**: 'wall', 'path', 'start', 'exit'
+- **Special Features**: Tunnels, bounce pads, secret passages
+
+### Event System
+```javascript
+// Keyboard controls
+document.addEventListener('keydown', (e) => {
+    switch (e.key.toLowerCase()) {
+        case 'arrowup': case 'w': this.moveCharacter('up'); break;
+        case 'arrowdown': case 's': this.moveCharacter('down'); break;
+        case 'arrowleft': case 'a': this.moveCharacter('left'); break;
+        case 'arrowright': case 'd': this.moveCharacter('right'); break;
+        case ' ': case 'space': this.switchCharacter(); break;
+    }
+});
+```
+
+### Movement Validation
+1. Check game state (not won)
+2. Calculate new position
+3. Validate bounds (0 <= x,y < mazeSize)
+4. Check for walls (`maze[y][x] !== 'wall'`)
+5. Update position and increment moves
+6. Handle special cells (tunnels, bounce pads, etc.)
+
+### Audio System
+- **Implementation**: Web Audio API with graceful fallbacks
+- **Initialization**: Lazy loading to avoid browser restrictions
+- **Methods**: `playTone()`, `playScream()`, various sound effects
+- **Fallback**: Silent operation if audio unavailable
+
+## Development Environment
+
+### Build System: Vite
+- **Dev Server**: `npm run dev` → http://localhost:5173
+- **Production Build**: `npm run build` → `dist/` folder
+- **Preview**: `npm run preview` for production testing
+
+### Module System
+- **Type**: ES6 modules (`type="module"` in script tag)
+- **Bundling**: Vite automatically bundles for production
+- **Entry Point**: `game.js` loaded as module
+
+## Testing Framework: Playwright
+
+### Test Structure
+```javascript
+// Example test pattern
+test('feature description', async ({ page }) => {
+    await page.goto('/');
+    
+    // Wait for game initialization
+    await page.waitForFunction(() => {
+        const maze = document.querySelector('#maze');
+        return maze && maze.children.length > 0;
+    });
+    
+    // Wait for game object
+    await page.waitForFunction(() => {
+        return typeof window.debugGame !== 'undefined';
+    });
+    
+    // Test interactions...
+});
+```
+
+### Test Coverage Areas
+1. **Page Loading**: No JavaScript errors on load
+2. **Game Initialization**: Maze generation, element creation
+3. **User Interactions**: Keyboard, buttons, character switching
+4. **Game Logic**: Movement validation, scoring, state changes
+5. **Error Handling**: Console errors, network failures
+
+## Common Issues & Solutions
+
+### Movement Not Working
+**Problem**: `moveCharacter()` called but no movement occurs
+**Debug Steps**:
+1. Check if move is valid (not blocked by wall)
+2. Verify game state (`gameWon: false`)
+3. Test from valid positions (start position can only move DOWN)
+
+### Character Switching Not Updating Display
+**Problem**: `activeCharacter` changes but UI doesn't update
+**Solution**: Ensure `switchCharacter()` calls `renderMaze()`
+
+### Audio Context Warnings
+**Problem**: Browser console shows AudioContext warnings
+**Solution**: Normal behavior - browsers require user interaction for audio
+**Code**: `initAudioContext()` handles graceful fallback
+
+### Test Timing Issues
+**Problem**: Tests fail due to race conditions
+**Solutions**:
+- Wait for maze generation: `maze.children.length > 0`
+- Wait for game object: `typeof window.debugGame !== 'undefined'`
+- Use `page.waitForFunction()` instead of fixed timeouts
+
+## Debugging Strategies
+
+### Browser Developer Tools
+```javascript
+// Access game state in console
+window.debugGame.activeCharacter
+window.debugGame.moves
+window.debugGame.matildaPos
+
+// Test methods directly
+window.debugGame.switchCharacter()
+window.debugGame.moveCharacter('down')
+```
+
+### Playwright Debugging
+```javascript
+// Add to tests for debugging
+const gameState = await page.evaluate(() => {
+    const game = window.debugGame;
+    return {
+        moves: game.moves,
+        activeCharacter: game.activeCharacter,
+        matildaPos: game.matildaPos
+    };
+});
+console.log('Game state:', gameState);
+```
+
+### Common Debugging Commands
+```bash
+# Run single test with browser visible
+npx playwright test tests/debug.spec.js --headed
+
+# Run tests with debug info
+DEBUG=pw:api npx playwright test
+
+# Generate test report
+npx playwright show-report
+```
+
+## Performance Considerations
+
+### Maze Rendering
+- **Method**: DOM manipulation per frame
+- **Optimization**: Batch DOM updates in `renderMaze()`
+- **Frequency**: Only on state changes, not continuous
+
+### Event Handling
+- **Keyboard**: Single document listener with switch statement
+- **Debouncing**: Space key uses flag to prevent rapid switching
+- **Performance**: O(1) event handling
+
+### Memory Management
+- **Maze Storage**: 2D array (15x15 = 225 cells)
+- **Game Loop**: RequestAnimationFrame for smooth updates
+- **Cleanup**: No explicit cleanup needed (single page app)
+
+## Deployment Configuration
+
+### Netlify Setup
+```toml
+# netlify.toml
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+```
+
+### Build Output
+- **HTML**: Single page with bundled assets
+- **CSS**: Minified stylesheet
+- **JavaScript**: Bundled and minified ES6 modules
+- **Assets**: Images and other static files
+
+## Browser Compatibility
+- **Modern Browsers**: Chrome 80+, Firefox 75+, Safari 13+, Edge 80+
+- **Features Used**: ES6 modules, Web Audio API, CSS Grid
+- **Fallbacks**: Audio gracefully degrades, core game works without sound
+
+## Security Considerations
+- **No Backend**: Client-side only, no server vulnerabilities
+- **No User Data**: No personal information collected
+- **Safe Content**: Family-friendly game content
+- **CSP Ready**: Compatible with Content Security Policy headers
