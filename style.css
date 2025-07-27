@@ -74,6 +74,9 @@ h1 {
     padding: 10px;
     border-radius: 10px;
     border: 4px solid #2c3e50;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .cell {
@@ -635,12 +638,104 @@ h1 {
     }
     
     .cell {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+        transition: all 0.1s ease;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Better touch targets for mobile */
+    .cell:hover, .cell:focus {
+        opacity: 0.8;
+    }
+    
+    /* Make characters more visible on mobile */
+    .cell.matilda, .cell.george {
+        border: 2px solid #fff;
+        box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        cursor: pointer;
+    }
+    
+    /* Visual feedback for interactive elements */
+    .cell.matilda:active, .cell.george:active {
+        transform: scale(0.95);
+        box-shadow: 0 0 20px rgba(255,255,255,0.8);
+    }
+    
+    .cell.path:active, .cell.tunnel:active, .cell.bounce:active {
+        background-color: rgba(255,255,255,0.3);
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        transform: scale(0.98);
+    }
+    
+    /* Add tap feedback animation */
+    .tap-feedback {
+        position: relative;
+    }
+    
+    .tap-feedback::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid #3498db;
+        border-radius: 50%;
+        animation: tap-ripple 0.6s ease-out;
+        pointer-events: none;
+    }
+    
+    @keyframes tap-ripple {
+        0% {
+            transform: scale(0.8);
+            opacity: 1;
+            border-width: 3px;
+        }
+        100% {
+            transform: scale(1.4);
+            opacity: 0;
+            border-width: 1px;
+        }
     }
     
     .game-info {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    /* Make buttons more touch-friendly */
+    button {
+        min-height: 44px;
+        padding: 12px 16px;
+        font-size: 16px;
+        touch-action: manipulation;
+    }
+    
+    .instructions {
+        font-size: 14px;
+        text-align: center;
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+}
+
+/* Additional mobile-specific improvements */
+@media (max-width: 480px) {
+    .cell {
+        width: 18px;
+        height: 18px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    .game-info {
+        font-size: 14px;
     }
 }

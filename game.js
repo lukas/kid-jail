@@ -201,6 +201,7 @@ class MatildaEscapeGame {
         this.generateMaze();
         this.renderMaze();
         this.attachEventListeners();
+        this.addMobileTouchControls();
         this.startGameLoop();
     }
 
@@ -1130,6 +1131,8 @@ class MatildaEscapeGame {
             for (let x = 0; x < this.mazeSize; x++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                cell.dataset.x = x;
+                cell.dataset.y = y;
                 
                 // Apply base cell type
                 if (this.maze[y][x] === 'wall') {
@@ -1639,48 +1642,156 @@ class MatildaEscapeGame {
             this.switchCharacter();
         });
 
-        // Touch/mobile controls
-        let touchStartX = 0;
-        let touchStartY = 0;
+        // Note: Mobile touch controls are handled in addMobileTouchControls() method
+    }
 
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        });
-
-        document.addEventListener('touchend', (e) => {
-            if (!touchStartX || !touchStartY) return;
-
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-
-            const minSwipeDistance = 30;
-
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // Horizontal swipe
-                if (Math.abs(deltaX) > minSwipeDistance) {
-                    if (deltaX > 0) {
-                        this.moveMatilda('right');
-                    } else {
-                        this.moveMatilda('left');
-                    }
-                }
-            } else {
-                // Vertical swipe
-                if (Math.abs(deltaY) > minSwipeDistance) {
-                    if (deltaY > 0) {
-                        this.moveMatilda('down');
-                    } else {
-                        this.moveMatilda('up');
-                    }
+    // Simple A* pathfinding for mobile click-to-move
+    findPath(startPos, endPos) {
+        // Simple breadth-first search for pathfinding
+        const queue = [{ pos: startPos, path: [] }];
+        const visited = new Set();
+        visited.add(`${startPos.x},${startPos.y}`);
+        
+        const directions = [
+            { x: 0, y: -1 }, { x: 0, y: 1 }, // up, down
+            { x: -1, y: 0 }, { x: 1, y: 0 }  // left, right
+        ];
+        
+        while (queue.length > 0) {
+            const current = queue.shift();
+            const { pos, path } = current;
+            
+            // If we reached the destination
+            if (pos.x === endPos.x && pos.y === endPos.y) {
+                return path;
+            }
+            
+            // Explore neighbors
+            for (const dir of directions) {
+                const newPos = { x: pos.x + dir.x, y: pos.y + dir.y };
+                const key = `${newPos.x},${newPos.y}`;
+                
+                // Check bounds and if not visited
+                if (newPos.x >= 0 && newPos.x < this.mazeSize &&
+                    newPos.y >= 0 && newPos.y < this.mazeSize &&
+                    !visited.has(key) &&
+                    this.maze[newPos.y][newPos.x] !== 'wall') {
+                    
+                    visited.add(key);
+                    const newPath = [...path, this.getDirectionName(dir)];
+                    queue.push({ pos: newPos, path: newPath });
                 }
             }
-
-            touchStartX = 0;
-            touchStartY = 0;
+        }
+        
+        return []; // No path found
+    }
+    
+    getDirectionName(dir) {
+        if (dir.x === 0 && dir.y === -1) return 'up';
+        if (dir.x === 0 && dir.y === 1) return 'down';
+        if (dir.x === -1 && dir.y === 0) return 'left';
+        if (dir.x === 1 && dir.y === 0) return 'right';
+        return '';
+    }
+    
+    // Mobile click-to-move functionality
+    handleCellClick(targetX, targetY) {
+        // Get current character position
+        const currentPos = this.activeCharacter === 'matilda' ? this.matildaPos : this.georgePos;
+        
+        // If clicking on current position, do nothing
+        if (currentPos.x === targetX && currentPos.y === targetY) {
+            return;
+        }
+        
+        // Check if clicking on a character to switch
+        if ((targetX === this.matildaPos.x && targetY === this.matildaPos.y) ||
+            (targetX === this.georgePos.x && targetY === this.georgePos.y)) {
+            this.switchCharacter();
+            return;
+        }
+        
+        // Check if target is a wall
+        if (this.maze[targetY][targetX] === 'wall') {
+            this.showMessage("Can't walk through walls! 🧱", 1000);
+            return;
+        }
+        
+        // Find path to target
+        const path = this.findPath(currentPos, { x: targetX, y: targetY });
+        
+        if (path.length > 0) {
+            // Add visual feedback for mobile
+            this.addTapFeedback(targetX, targetY);
+            
+            // Execute path step by step
+            this.executePath(path);
+        } else {
+            this.showMessage("Can't reach that spot! 🚫", 1000);
+        }
+    }
+    
+    // Add visual feedback for mobile taps
+    addTapFeedback(x, y) {
+        const cellElement = document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        if (cellElement) {
+            cellElement.style.backgroundColor = 'rgba(255, 255, 0, 0.5)';
+            cellElement.style.transform = 'scale(0.95)';
+            
+            // Remove feedback after a short time
+            setTimeout(() => {
+                cellElement.style.backgroundColor = '';
+                cellElement.style.transform = '';
+            }, 200);
+        }
+    }
+    
+    executePath(path) {
+        if (path.length === 0 || this.gameWon) return;
+        
+        // Take the first step
+        const nextMove = path.shift();
+        this.moveCharacter(nextMove);
+        
+        // Continue with remaining path after a short delay
+        if (path.length > 0) {
+            setTimeout(() => {
+                this.executePath(path);
+            }, 200); // 200ms delay between moves for smooth animation
+        }
+    }
+    
+    // Add click event listeners to maze cells
+    addMobileTouchControls() {
+        const maze = document.getElementById('maze');
+        
+        maze.addEventListener('click', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            
+            // Get cell coordinates from data attributes
+            const x = parseInt(cell.dataset.x);
+            const y = parseInt(cell.dataset.y);
+            
+            this.handleCellClick(x, y);
+        });
+        
+        // Also add touch event for mobile
+        maze.addEventListener('touchend', (e) => {
+            e.preventDefault(); // Prevent double-firing with click
+            
+            const touch = e.changedTouches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            const cell = element?.closest('.cell');
+            
+            if (!cell) return;
+            
+            // Get cell coordinates from data attributes
+            const x = parseInt(cell.dataset.x);
+            const y = parseInt(cell.dataset.y);
+            
+            this.handleCellClick(x, y);
         });
     }
 
