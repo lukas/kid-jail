@@ -34,6 +34,10 @@ this.mazeSize = 15
 - `moveCharacter(direction)` - Handles character movement with validation
 - `switchCharacter()` - Toggles active character and updates display
 - `attachEventListeners()` - Sets up keyboard and button controls
+- `addMobileTouchControls()` - Sets up mobile click-to-move functionality
+- `handleCellClick(x, y)` - Processes mobile touch/click interactions
+- `findPath(start, end)` - Breadth-first search pathfinding for mobile
+- `executePath(path)` - Animates character movement along computed path
 
 ## Technical Implementation Details
 
@@ -112,6 +116,8 @@ test('feature description', async ({ page }) => {
 3. **User Interactions**: Keyboard, buttons, character switching
 4. **Game Logic**: Movement validation, scoring, state changes
 5. **Error Handling**: Console errors, network failures
+6. **Mobile Functionality**: Touch controls, pathfinding, character switching
+7. **Cross-Device Testing**: Desktop and mobile viewport compatibility
 
 ## Common Issues & Solutions
 
@@ -131,12 +137,37 @@ test('feature description', async ({ page }) => {
 **Solution**: Normal behavior - browsers require user interaction for audio
 **Code**: `initAudioContext()` handles graceful fallback
 
+### Mobile Click-to-Move Issues
+**Problem**: Mobile touch controls not responding or conflicting
+**Debug Steps**:
+1. Check if data attributes exist on cells (`data-x`, `data-y`)
+2. Verify pathfinding algorithm returns valid path
+3. Test with mobile viewport in Playwright (`--project=mobile`)
+4. Remove conflicting touch event handlers (old swipe controls)
+**Solutions**:
+- Add both `click` and `touchend` event listeners to maze
+- Use `preventDefault()` on touchend to avoid double-firing
+- Implement breadth-first search pathfinding for click-to-move
+- Add visual feedback with tap animations
+
+### Font Readability on Mobile
+**Problem**: Comic Sans MS difficult for kids to read on small screens
+**Solution**: Use Arial/Helvetica on mobile devices via CSS media queries
+```css
+@media (max-width: 600px) {
+    body, h1, .instructions, .game-info {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+}
+```
+
 ### Test Timing Issues
 **Problem**: Tests fail due to race conditions
 **Solutions**:
 - Wait for maze generation: `maze.children.length > 0`
 - Wait for game object: `typeof window.debugGame !== 'undefined'`
 - Use `page.waitForFunction()` instead of fixed timeouts
+- For mobile tests, add project configuration with `hasTouch: true`
 
 ## Debugging Strategies
 
