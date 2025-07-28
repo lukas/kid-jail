@@ -628,6 +628,10 @@ h1 {
 }
 
 @media (max-width: 600px) {
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    
     .game-container {
         padding: 15px;
         width: 95%;
@@ -635,6 +639,7 @@ h1 {
     
     h1 {
         font-size: 2em;
+        font-family: Arial, Helvetica, sans-serif;
     }
     
     .cell {
@@ -721,11 +726,16 @@ h1 {
         padding: 10px;
         background: rgba(0,0,0,0.1);
         border-radius: 8px;
+        font-family: Arial, Helvetica, sans-serif;
     }
 }
 
 /* Additional mobile-specific improvements */
 @media (max-width: 480px) {
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    
     .cell {
         width: 18px;
         height: 18px;
@@ -733,9 +743,15 @@ h1 {
     
     h1 {
         font-size: 1.8em;
+        font-family: Arial, Helvetica, sans-serif;
     }
     
     .game-info {
         font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    
+    .instructions {
+        font-family: Arial, Helvetica, sans-serif;
     }
 }
